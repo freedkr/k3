@@ -290,7 +290,6 @@ func analyzeConcentration(nodes) []NodeConcentration {
 
 
 ## 📚 延伸阅读
-- **研究笔记**: [RESEARCH_NOTES.md](./RESEARCH_NOTES.md) - 详细发现过程
 - **核心实现**: [simulator.go](./simulator.go) - 模拟器架构
 - **迁移算法**: [hotspot_migration.go](./hotspot_migration.go) - 热点迁移策略
 - **前缀分析**: [universal_prefix_analysis.go](./universal_prefix_analysis.go) - 通用性框架
