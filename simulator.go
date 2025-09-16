@@ -182,8 +182,9 @@ func (c *CacheAwareSelector) SelectNode(request *Request, nodes []*PrefillNode) 
 			}
 		}
 
-		// 考虑负载因素
-		load := float64(len(node.RequestQueue)) / float64(node.MaxCacheSize)
+		// 考虑负载因素 (修复: 使用更合理的负载计算)
+		// 负载 = 队列长度 / 100 (标准化到0-1范围)
+		load := float64(len(node.RequestQueue)) / 100.0
 		scores[i] = nodeScore{
 			node:     node,
 			hitCount: hitCount,
@@ -192,11 +193,12 @@ func (c *CacheAwareSelector) SelectNode(request *Request, nodes []*PrefillNode) 
 	}
 
 	// 选择得分最高的节点（命中多、负载低）
+	// 修复: 确保负载权重有效，乘以系数增强负载影响
 	bestNode := scores[0].node
-	bestScore := float64(scores[0].hitCount) - scores[0].load
+	bestScore := float64(scores[0].hitCount) - scores[0].load*10.0
 
 	for _, score := range scores[1:] {
-		currentScore := float64(score.hitCount) - score.load
+		currentScore := float64(score.hitCount) - score.load*10.0
 		if currentScore > bestScore {
 			bestScore = currentScore
 			bestNode = score.node
@@ -248,13 +250,14 @@ func (e *EnhancedCacheAwareSelector) calculateScore(request *Request, node *Pref
 	}
 	hitRatio := float64(hitCount) / float64(len(request.HashIDs))
 
-	// 2. 计算归一化负载 (归一化到[0,1])
-	currentLoad := float64(len(node.RequestQueue)) / float64(node.MaxCacheSize)
+	// 2. 计算归一化负载 (修复: 使用合理的基数)
+	// 使用100作为标准化基数，而不是MaxCacheSize
+	currentLoad := float64(len(node.RequestQueue)) / 100.0
 
 	// 归一化：相对于所有节点的平均负载
 	totalLoad := 0.0
 	for _, n := range allNodes {
-		totalLoad += float64(len(n.RequestQueue)) / float64(n.MaxCacheSize)
+		totalLoad += float64(len(n.RequestQueue)) / 100.0
 	}
 	avgLoad := totalLoad / float64(len(allNodes))
 	normalizedLoad := currentLoad
@@ -514,6 +517,15 @@ func (p *BasicPrefillProcessor) ProcessRequest(request *Request, nodes []*Prefil
 		return nil, fmt.Errorf("no available node")
 	}
 
+	// 添加请求到队列 (修复: RequestQueue之前从未更新)
+	selectedNode.RequestQueue = append(selectedNode.RequestQueue, request)
+
+	// 保持队列长度合理，模拟请求完成后的清理
+	// 只保留最近的100个请求用于负载计算
+	if len(selectedNode.RequestQueue) > 100 {
+		selectedNode.RequestQueue = selectedNode.RequestQueue[len(selectedNode.RequestQueue)-100:]
+	}
+
 	// 初始化节点统计
 	if _, exists := p.nodeStatsMap[selectedNode.ID]; !exists {
 		p.nodeStatsMap[selectedNode.ID] = &NodeStatistics{
@@ -745,8 +757,8 @@ func RunSimulation() {
 		NewEnhancedCacheAwareSelector(0.6, 0.8), // 论文推荐配置
 		NewEnhancedCacheAwareSelector(0.4, 1.0), // 强化负载均衡
 		NewEnhancedCacheAwareSelector(0.8, 0.6), // 强化缓存感知
-		// 测试热点迁移机制
-		NewHotspotMigrationSelector(0.6, 0.8, 0.7, 0.1), // 带迁移的缓存感知
+		// 测试热点迁移机制 (暂时注释，需要引入hotspot_migration.go)
+		// NewHotspotMigrationSelector(0.6, 0.8, 0.7, 0.1), // 带迁移的缓存感知
 	}
 
 	evictionAlgos := []func() EvictionAlgorithm{

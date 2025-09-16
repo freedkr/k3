@@ -11,6 +11,15 @@ func main() {
 	fmt.Println("基于Mooncake论文的分布式LLM推理系统缓存管理模拟")
 	fmt.Println()
 
+	// 运行稳健性对比分析
+	RunRobustnessComparison()
+
+	// 运行β灵敏度分析
+	// RunBetaSensitivityAnalysis()
+
+	// 测试修复后的负载均衡
+	// TestLoadBalanceFix()
+
 	// 首先分析trace数据访问模式
 	// RunTraceAnalysis()
 
@@ -36,5 +45,5 @@ func main() {
 	// RunUniversalAnalysis()
 
 	// // 运行完整模拟
-	RunSimulation()
+	// RunSimulation()
 }
