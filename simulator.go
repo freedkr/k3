@@ -9,8 +9,6 @@ import (
 	"os"
 )
 
-// ============= 核心数据结构 =============
-
 // Block 表示一个KV Cache块
 type Block struct {
 	HashID    int // 块的hash标识
@@ -23,14 +21,14 @@ type Block struct {
 
 // PrefixPattern 前缀模式定义
 type PrefixPattern struct {
-	Prefix       []int     // 前缀序列
-	HitCount     int       // 该前缀的命中次数
+	Prefix       []int          // 前缀序列
+	HitCount     int            // 该前缀的命中次数
 	NodeDist     map[string]int // 各节点上该前缀的分布
-	LastHit      int       // 最后命中的访问序号
-	Intensity    float64   // 热点强度 = HitCount / 时间窗口
-	HitHistory   []int     // 命中历史记录 (用于预测分析)
-	TrendSlope   float64   // 访问趋势斜率 (正值表示上升趋势)
-	PredictedHot bool      // 预测是否会成为热点
+	LastHit      int            // 最后命中的访问序号
+	Intensity    float64        // 热点强度 = HitCount / 时间窗口
+	HitHistory   []int          // 命中历史记录 (用于预测分析)
+	TrendSlope   float64        // 访问趋势斜率 (正值表示上升趋势)
+	PredictedHot bool           // 预测是否会成为热点
 }
 
 // HotspotMetrics 热点检测指标
@@ -43,12 +41,12 @@ type HotspotMetrics struct {
 
 // MigrationRecord 迁移记录
 type MigrationRecord struct {
-	PrefixKey    string    // 迁移的前缀键
-	FromNode     string    // 源节点
-	ToNode       string    // 目标节点
-	Timestamp    int       // 迁移时间戳
-	Reason       string    // 迁移原因 (hotspot/balancing)
-	Intensity    float64   // 触发时的热点强度
+	PrefixKey string  // 迁移的前缀键
+	FromNode  string  // 源节点
+	ToNode    string  // 目标节点
+	Timestamp int     // 迁移时间戳
+	Reason    string  // 迁移原因 (hotspot/balancing)
+	Intensity float64 // 触发时的热点强度
 }
 
 // Request 表示一个推理请求
@@ -80,8 +78,6 @@ type PrefillNode struct {
 	HotspotMetrics *HotspotMetrics // 热点检测指标
 }
 
-// ============= 抽象接口定义 =============
-
 // PrefillNodeSelector prefill节点选择器接口
 type PrefillNodeSelector interface {
 	// SelectNode 选择一个prefill节点处理请求
@@ -109,8 +105,6 @@ type PrefillProcessor interface {
 	// GetStatistics 获取统计信息
 	GetStatistics() *SimulationStats
 }
-
-// ============= 结果和统计结构 =============
 
 // PrefillResult prefill处理结果
 type PrefillResult struct {
@@ -144,8 +138,6 @@ type NodeStatistics struct {
 	MaxMemoryUsage float64
 	EvictedBlocks  int
 }
-
-// ============= 接口实现：随机选择器 =============
 
 type RandomNodeSelector struct{}
 
@@ -286,24 +278,24 @@ func (c *CacheAwareSelector) GetName() string {
 // ============= 接口实现：前缀感知热点迁移选择器 =============
 
 type PrefixAwareHotspotSelector struct {
-	Alpha             float64 // 缓存亲和性权重
-	Beta              float64 // 负载均衡权重
-	Gamma             float64 // 前缀匹配权重
-	HotspotThreshold  float64 // 热点强度阈值
-	TimeWindowSize    int     // 热点检测时间窗口
-	MaxPrefixLength   int     // 最大前缀长度
-	accessCounter     int     // 全局访问计数器
+	Alpha            float64 // 缓存亲和性权重
+	Beta             float64 // 负载均衡权重
+	Gamma            float64 // 前缀匹配权重
+	HotspotThreshold float64 // 热点强度阈值
+	TimeWindowSize   int     // 热点检测时间窗口
+	MaxPrefixLength  int     // 最大前缀长度
+	accessCounter    int     // 全局访问计数器
 }
 
 func NewPrefixAwareHotspotSelector(alpha, beta, gamma, hotspotThreshold float64) *PrefixAwareHotspotSelector {
 	return &PrefixAwareHotspotSelector{
-		Alpha:             alpha,
-		Beta:              beta,
-		Gamma:             gamma,
-		HotspotThreshold:  hotspotThreshold,
-		TimeWindowSize:    1000, // 1000个请求的时间窗口
-		MaxPrefixLength:   8,    // 最大前缀长度为8
-		accessCounter:     0,
+		Alpha:            alpha,
+		Beta:             beta,
+		Gamma:            gamma,
+		HotspotThreshold: hotspotThreshold,
+		TimeWindowSize:   1000, // 1000个请求的时间窗口
+		MaxPrefixLength:  8,    // 最大前缀长度为8
+		accessCounter:    0,
 	}
 }
 
@@ -559,11 +551,11 @@ func (p *PrefixAwareHotspotSelector) calculatePredictiveReplicationFactor(patter
 // selectBestNodeWithPrefixAwareness 基于前缀感知的增强节点选择
 func (p *PrefixAwareHotspotSelector) selectBestNodeWithPrefixAwareness(request *Request, nodes []*PrefillNode) *PrefillNode {
 	type nodeScore struct {
-		node         *PrefillNode
-		cacheScore   float64 // 基础缓存命中得分
-		prefixScore  float64 // 前缀匹配得分
-		loadScore    float64 // 负载得分
-		finalScore   float64 // 最终综合得分
+		node        *PrefillNode
+		cacheScore  float64 // 基础缓存命中得分
+		prefixScore float64 // 前缀匹配得分
+		loadScore   float64 // 负载得分
+		finalScore  float64 // 最终综合得分
 	}
 
 	scores := make([]nodeScore, len(nodes))
@@ -669,7 +661,7 @@ func (p *PrefixAwareHotspotSelector) updatePrefixPatterns(request *Request, sele
 			windowStart = 0
 		}
 		if pattern.LastHit >= windowStart {
-			pattern.Intensity = float64(pattern.HitCount) / float64(p.accessCounter - windowStart + 1)
+			pattern.Intensity = float64(pattern.HitCount) / float64(p.accessCounter-windowStart+1)
 		}
 	}
 }
@@ -687,7 +679,7 @@ func (p *PrefixAwareHotspotSelector) hashIDsToKey(hashIDs []int) string {
 }
 
 func (p *PrefixAwareHotspotSelector) findBestPrefixNode(prefix []int, nodes []*PrefillNode) (*PrefillNode, int) {
-	bestNode := (*PrefillNode)(nil)
+	var bestNode *PrefillNode
 	maxHits := 0
 
 	for _, node := range nodes {
@@ -709,7 +701,6 @@ func (p *PrefixAwareHotspotSelector) findBestPrefixNode(prefix []int, nodes []*P
 func (p *PrefixAwareHotspotSelector) isHotspot(pattern *PrefixPattern) bool {
 	return pattern.Intensity > p.HotspotThreshold
 }
-
 
 // calculateDynamicReplicationFactor 基于热点强度动态计算复制因子
 func (p *PrefixAwareHotspotSelector) calculateDynamicReplicationFactor(pattern *PrefixPattern, allNodes []*PrefillNode) int {
@@ -1187,7 +1178,7 @@ func NewSimulator(nodeCount int, cacheSize int, selector PrefillNodeSelector, ev
 			MaxMemoryMB:      2,    // 减小到2MB以确保淘汰
 			NetworkBandwidth: 10.0, // 10GB/s
 			EvictionAlgo:     evictionAlgo(),
-			seqCounter:       0, // 初始化序号计数器
+			seqCounter:       0,   // 初始化序号计数器
 			HotspotMetrics:   nil, // 由PrefixAwareHotspotSelector按需初始化
 		}
 	}
@@ -1207,5 +1198,3 @@ func (s *Simulator) LoadData(filename string) error {
 	s.requests = requests
 	return nil
 }
-
-
